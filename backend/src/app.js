@@ -5,12 +5,19 @@ const authRoutes = require('./routes/auth.routes');
 const resumeRoutes = require('./routes/resume.routes');
 const jdRoutes = require('./routes/jd.routes');
 const analysisRoutes = require('./routes/analysis.routes');
+const telegramRoutes = require('./routes/telegram.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendSuccess } = require('./utils/response');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin']
+}));
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -24,6 +31,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/resumes', resumeRoutes);
 app.use('/api/v1/job-descriptions', jdRoutes);
 app.use('/api/v1/analyses', analysisRoutes);
+app.use('/api/v1/telegram', telegramRoutes);
 
 // Catch-all 404 Route
 app.use('*', (req, res) => {
