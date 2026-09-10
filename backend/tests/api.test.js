@@ -30,8 +30,13 @@ test.before(async () => {
   });
 });
 
+const mongoose = require('mongoose');
+
 test.after(async () => {
   if (server) server.close();
+  try {
+    await mongoose.disconnect();
+  } catch (_) {}
 });
 
 test('1. GET /health returns status UP', async () => {
