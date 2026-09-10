@@ -62,6 +62,7 @@ class AnalysisSetupScreen extends ConsumerWidget {
                 )
               else
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   value: resumeState.selectedResumeId,
                   decoration: const InputDecoration(prefixIcon: Icon(Icons.description)),
                   items: resumeState.resumes.map((r) => DropdownMenuItem(
@@ -89,6 +90,7 @@ class AnalysisSetupScreen extends ConsumerWidget {
                 )
               else
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   value: jdState.selectedJdId,
                   decoration: const InputDecoration(prefixIcon: Icon(Icons.work)),
                   items: jdState.jds.map((j) => DropdownMenuItem(
