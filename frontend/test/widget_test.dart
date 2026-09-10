@@ -5,6 +5,7 @@ import 'package:ats_chatbot/main.dart';
 void main() {
   testWidgets('App renders ATSChatbotApp successfully', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: ATSChatbotApp()));
+    await tester.pump(const Duration(seconds: 1));
     expect(find.byType(ATSChatbotApp), findsOneWidget);
   });
 }

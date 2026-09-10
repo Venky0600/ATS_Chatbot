@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../auth/auth_provider.dart';
 import '../resume/resume_upload_screen.dart';
 import '../jd/jd_input_screen.dart';
 import '../analysis/analysis_setup_screen.dart';
 import '../history/history_screen.dart';
-import '../profile/profile_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -22,7 +20,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ResumeUploadScreen(),
     JdInputScreen(),
     HistoryScreen(),
-    ProfileScreen(),
   ];
 
   @override
@@ -45,7 +42,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             BottomNavigationBarItem(icon: Icon(Icons.description_rounded), label: 'Resumes'),
             BottomNavigationBarItem(icon: Icon(Icons.work_rounded), label: 'JDs'),
             BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'History'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
           ],
         ),
       ),

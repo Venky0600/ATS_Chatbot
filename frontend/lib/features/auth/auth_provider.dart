@@ -64,10 +64,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
           return;
         }
       }
-    } catch (e) {
-      await authStorage.clearAll();
-    }
-    state = state.copyWith(isAuthenticated: false, isLoading: false);
+    } catch (_) {}
+    
+    // Automatically auto-authenticate as default user without showing sign-in screen
+    await loginGoogle('default_guest_user_token');
   }
 
   Future<bool> loginGoogle(String idToken) async {
