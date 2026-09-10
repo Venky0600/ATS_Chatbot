@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../core/api_client.dart';
@@ -74,14 +75,18 @@ class ResumeNotifier extends StateNotifier<ResumeState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       MultipartFile multipartFile;
-      if (file.path != null && file.path!.isNotEmpty) {
-        multipartFile = await MultipartFile.fromFile(
-          file.path!,
-          filename: file.name,
-        );
-      } else if (file.bytes != null && file.bytes!.isNotEmpty) {
+      if (kIsWeb || file.bytes != null) {
+        if (file.bytes == null || file.bytes!.isEmpty) {
+          state = state.copyWith(isLoading: false, errorMessage: 'Selected file content is empty.');
+          return false;
+        }
         multipartFile = MultipartFile.fromBytes(
           file.bytes!,
+          filename: file.name,
+        );
+      } else if (file.path != null && file.path!.isNotEmpty) {
+        multipartFile = await MultipartFile.fromFile(
+          file.path!,
           filename: file.name,
         );
       } else {
