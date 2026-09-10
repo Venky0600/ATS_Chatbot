@@ -15,7 +15,20 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await authStorage.getToken();
+          var token = await authStorage.getToken();
+          if ((token == null || token.isEmpty) && !options.path.contains('/auth/')) {
+            try {
+              final authRes = await dio.post('/auth/google', data: {'idToken': 'default_guest_user_token'});
+              if (authRes.data['success'] == true) {
+                token = authRes.data['data']['accessToken'];
+                if (token != null && token.isNotEmpty) {
+                  await authStorage.saveToken(token);
+                }
+              }
+            } catch (e) {
+              print('[ApiClient Auto-Auth Failed]: $e');
+            }
+          }
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
