@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const authProviderSchema = new mongoose.Schema({
   provider: {
     type: String,
-    enum: ['google', 'discord'],
+    enum: ['google', 'discord', 'telegram'],
     required: true
   },
   providerUserId: {

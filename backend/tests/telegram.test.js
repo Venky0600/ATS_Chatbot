@@ -77,3 +77,26 @@ test('Telegram Integration — POST /api/v1/telegram/webhook (JD text update)', 
 
   assert.equal(res.status, 200);
 });
+
+test('Telegram Integration — POST /api/v1/telegram/webhook (/new and /clear commands)', async () => {
+  for (const cmd of ['/new', '/clear']) {
+    const telegramUpdate = {
+      update_id: 100003,
+      message: {
+        message_id: 3,
+        from: { id: 987654321, is_bot: false, first_name: 'TelegramTestUser' },
+        chat: { id: 987654321, type: 'private' },
+        date: Math.floor(Date.now() / 1000),
+        text: cmd
+      }
+    };
+
+    const res = await fetch(`${baseUrl}/api/v1/telegram/webhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telegramUpdate)
+    });
+
+    assert.equal(res.status, 200);
+  }
+});

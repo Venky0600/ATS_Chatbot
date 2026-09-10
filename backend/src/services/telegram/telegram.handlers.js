@@ -45,8 +45,8 @@ const getOrCreateTelegramUser = async (telegramUser) => {
     let state = inMemoryTelegramStates.get(telegramUserId);
     if (!state) {
       const appUser = await findOrCreateUser({
-        provider: 'google',
-        providerUserId: `telegram_${telegramUserId}`,
+        provider: 'telegram',
+        providerUserId: telegramUserId,
         email: `telegram_${telegramUserId}@telegram.user`,
         name: telegramUser.first_name || telegramUser.username || 'Telegram User'
       });
@@ -70,8 +70,8 @@ const getOrCreateTelegramUser = async (telegramUser) => {
   let state = await telegramStateModel.findOne({ telegramUserId });
   if (!state) {
     const appUser = await findOrCreateUser({
-      provider: 'google',
-      providerUserId: `telegram_${telegramUserId}`,
+      provider: 'telegram',
+      providerUserId: telegramUserId,
       email: `telegram_${telegramUserId}@telegram.user`,
       name: telegramUser.first_name || telegramUser.username || 'Telegram User'
     });
@@ -297,9 +297,27 @@ const handleCallbackQuery = async (bot, query) => {
   await safeSendMessage(bot, query.message.chat.id, responseText, { parse_mode: 'Markdown' });
 };
 
+// Handle /clear command
+const handleClearCommand = async (bot, msg) => {
+  const state = await getOrCreateTelegramUser(msg.from);
+  state.state = 'WAITING_FOR_RESUME';
+  state.currentResumeId = '';
+  state.currentJobDescriptionId = '';
+  state.currentAnalysisId = '';
+  await state.save();
+
+  await safeSendMessage(
+    bot,
+    msg.chat.id,
+    `🧹 *Session cleared!* All active pointers cleared. Type /start or upload a new resume to begin.`,
+    { parse_mode: 'Markdown' }
+  );
+};
+
 module.exports = {
   handleStartCommand,
   handleNewCommand,
+  handleClearCommand,
   handleHelpCommand,
   handleHistoryCommand,
   handleDocumentMessage,

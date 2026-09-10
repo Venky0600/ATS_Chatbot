@@ -3,6 +3,7 @@ const env = require('../../config/environment');
 const {
   handleStartCommand,
   handleNewCommand,
+  handleClearCommand,
   handleHelpCommand,
   handleHistoryCommand,
   handleDocumentMessage,
@@ -25,6 +26,8 @@ const getTelegramBot = () => {
           await handleStartCommand(botInstance, msg);
         } else if (msg.text && msg.text.startsWith('/new')) {
           await handleNewCommand(botInstance, msg);
+        } else if (msg.text && msg.text.startsWith('/clear')) {
+          await handleClearCommand(botInstance, msg);
         } else if (msg.text && msg.text.startsWith('/help')) {
           await handleHelpCommand(botInstance, msg);
         } else if (msg.text && msg.text.startsWith('/history')) {
