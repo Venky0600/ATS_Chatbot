@@ -15,19 +15,31 @@ const KNOWN_SKILLS = [
 ];
 
 const extractTextFromFile = async (buffer, mimetype, originalname) => {
+  if (!buffer || buffer.length === 0) {
+    const { ValidationError } = require('../utils/errors');
+    throw new ValidationError('Uploaded file is empty (0 bytes).');
+  }
+
   const ext = (originalname.split('.').pop() || '').toLowerCase();
 
-  if (mimetype === 'application/pdf' || ext === 'pdf') {
-    return await parsePdf(buffer);
-  } else if (
-    mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    ext === 'docx'
-  ) {
-    return await parseDocx(buffer);
-  } else if (mimetype === 'text/plain' || ext === 'txt') {
-    return parseText(buffer);
-  } else {
-    throw new Error(`Unsupported file type: ${ext || mimetype}`);
+  try {
+    if (mimetype === 'application/pdf' || ext === 'pdf') {
+      return await parsePdf(buffer);
+    } else if (
+      mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      ext === 'docx'
+    ) {
+      return await parseDocx(buffer);
+    } else if (mimetype === 'text/plain' || ext === 'txt') {
+      return parseText(buffer);
+    } else {
+      const { AppError } = require('../utils/errors');
+      throw new AppError(`Unsupported file type: ${ext || mimetype}`, 415, 'UNSUPPORTED_FILE_TYPE');
+    }
+  } catch (error) {
+    if (error.statusCode) throw error;
+    const { AppError } = require('../utils/errors');
+    throw new AppError(`Unable to extract text from ${originalname}: ${error.message}`, 422, 'RESUME_PARSE_FAILED');
   }
 };
 

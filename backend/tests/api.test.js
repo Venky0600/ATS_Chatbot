@@ -2,19 +2,29 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const app = require('../src/app');
 const http = require('http');
+const { connectDB } = require('../src/config/database');
 
 let server;
 let baseUrl;
-
-const { connectDB } = require('../src/config/database');
+let token;
 
 test.before(async () => {
   await connectDB();
   return new Promise((resolve) => {
     server = http.createServer(app);
-    server.listen(0, () => {
+    server.listen(0, async () => {
       const port = server.address().port;
       baseUrl = `http://localhost:${port}`;
+
+      // Create test auth user & token
+      const authRes = await fetch(`${baseUrl}/api/v1/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: 'test_user_main@example.com' })
+      });
+      const authData = await authRes.json();
+      token = authData.data.accessToken;
+
       resolve();
     });
   });
@@ -24,7 +34,7 @@ test.after(async () => {
   if (server) server.close();
 });
 
-test('GET /health returns status UP', async () => {
+test('1. GET /health returns status UP', async () => {
   const res = await fetch(`${baseUrl}/health`);
   assert.equal(res.status, 200);
   const data = await res.json();
@@ -32,29 +42,68 @@ test('GET /health returns status UP', async () => {
   assert.equal(data.data.status, 'UP');
 });
 
-test('End-to-End API Journey: Auth -> Resume -> JD -> Analysis -> Security Ownership', async () => {
-  // 1. Google Authentication
-  const authRes = await fetch(`${baseUrl}/api/v1/auth/google`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken: 'test_google_token_user_a@example.com' })
-  });
-  assert.equal(authRes.status, 200);
-  const authData = await authRes.json();
-  assert.equal(authData.success, true);
-  const token = authData.data.accessToken;
-  assert.ok(token);
+test('2. Resume Upload TXT -> 201 Created & Parsed', async () => {
+  const form = new FormData();
+  const blob = new Blob(['John Doe\nSoftware Engineer\nSkills: Flutter, Dart, Firebase'], { type: 'text/plain' });
+  form.append('file', blob, 'resume_sample.txt');
 
-  // 2. Fetch User Profile
+  const res = await fetch(`${baseUrl}/api/v1/resumes`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: form
+  });
+
+  assert.equal(res.status, 201);
+  const data = await res.json();
+  assert.equal(data.success, true);
+  assert.equal(data.data.resume.fileName, 'resume_sample.txt');
+  assert.equal(data.data.resume.status, 'processed');
+});
+
+test('3. Resume Upload Empty File (0 bytes) -> 400 Bad Request', async () => {
+  const form = new FormData();
+  const blob = new Blob([], { type: 'text/plain' });
+  form.append('file', blob, 'empty_resume.txt');
+
+  const res = await fetch(`${baseUrl}/api/v1/resumes`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: form
+  });
+
+  assert.equal(res.status, 400);
+  const data = await res.json();
+  assert.equal(data.success, false);
+  assert.equal(data.error.code, 'VALIDATION_ERROR');
+});
+
+test('4. Resume Upload Unsupported File (.png) -> 415 Unsupported Media Type', async () => {
+  const form = new FormData();
+  const blob = new Blob(['fake_image_bytes'], { type: 'image/png' });
+  form.append('file', blob, 'image.png');
+
+  const res = await fetch(`${baseUrl}/api/v1/resumes`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: form
+  });
+
+  assert.equal(res.status, 415);
+  const data = await res.json();
+  assert.equal(data.success, false);
+  assert.equal(data.error.code, 'UNSUPPORTED_FILE_TYPE');
+});
+
+test('5. End-to-End API Journey: Auth -> Resume -> JD -> Analysis -> Security Ownership', async () => {
+  // 1. Fetch User Profile
   const meRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   assert.equal(meRes.status, 200);
   const meData = await meRes.json();
   assert.equal(meData.success, true);
-  assert.ok(meData.data.user.email);
 
-  // 3. Create Job Description
+  // 2. Create Job Description
   const jdRes = await fetch(`${baseUrl}/api/v1/job-descriptions`, {
     method: 'POST',
     headers: {
@@ -72,10 +121,10 @@ test('End-to-End API Journey: Auth -> Resume -> JD -> Analysis -> Security Owner
   const jdId = jdData.data.jobDescription.id;
   assert.ok(jdId);
 
-  // 4. Create Resume (using text parser directly for test stream)
+  // 3. Upload Resume
   const resumeFormData = new FormData();
   const blob = new Blob(['John Doe\nFlutter Developer\nSkills: Flutter, Dart, Firebase, REST API, MongoDB'], { type: 'text/plain' });
-  resumeFormData.append('file', blob, 'resume.txt');
+  resumeFormData.append('file', blob, 'resume_sample.txt');
 
   const resumeRes = await fetch(`${baseUrl}/api/v1/resumes`, {
     method: 'POST',
@@ -87,7 +136,7 @@ test('End-to-End API Journey: Auth -> Resume -> JD -> Analysis -> Security Owner
   const resumeId = resumeData.data.resume.id;
   assert.ok(resumeId);
 
-  // 5. Create Analysis
+  // 4. Create Analysis
   const analysisRes = await fetch(`${baseUrl}/api/v1/analyses`, {
     method: 'POST',
     headers: {
@@ -103,7 +152,7 @@ test('End-to-End API Journey: Auth -> Resume -> JD -> Analysis -> Security Owner
   assert.ok(analysisId);
   assert.ok(analysisData.data.analysis.scores.overallMatch >= 0);
 
-  // 6. Security Check: User B cannot access User A's Analysis
+  // 5. Security Ownership Check: User B cannot access User A's Analysis
   const authResB = await fetch(`${baseUrl}/api/v1/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

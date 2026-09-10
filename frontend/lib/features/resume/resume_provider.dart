@@ -73,11 +73,24 @@ class ResumeNotifier extends StateNotifier<ResumeState> {
   Future<bool> uploadResumeFile(PlatformFile file) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      FormData formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          file.bytes ?? [],
+      MultipartFile multipartFile;
+      if (file.path != null && file.path!.isNotEmpty) {
+        multipartFile = await MultipartFile.fromFile(
+          file.path!,
           filename: file.name,
-        ),
+        );
+      } else if (file.bytes != null && file.bytes!.isNotEmpty) {
+        multipartFile = MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        );
+      } else {
+        state = state.copyWith(isLoading: false, errorMessage: 'Selected file is empty or unreadable.');
+        return false;
+      }
+
+      FormData formData = FormData.fromMap({
+        'file': multipartFile,
       });
 
       final res = await apiClient.post('/resumes', data: formData);
