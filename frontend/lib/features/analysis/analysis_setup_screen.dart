@@ -65,9 +65,21 @@ class AnalysisSetupScreen extends ConsumerWidget {
                   isExpanded: true,
                   value: resumeState.selectedResumeId,
                   decoration: const InputDecoration(prefixIcon: Icon(Icons.description)),
+                  selectedItemBuilder: (context) {
+                    return resumeState.resumes.map((r) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          r.fileName,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      );
+                    }).toList();
+                  },
                   items: resumeState.resumes.map((r) => DropdownMenuItem(
                     value: r.id,
-                    child: Text(r.fileName, overflow: TextOverflow.ellipsis),
+                    child: Text(r.fileName, overflow: TextOverflow.ellipsis, maxLines: 1),
                   )).toList(),
                   onChanged: (val) {
                     if (val != null) ref.read(resumeProvider.notifier).selectResume(val);
@@ -93,9 +105,21 @@ class AnalysisSetupScreen extends ConsumerWidget {
                   isExpanded: true,
                   value: jdState.selectedJdId,
                   decoration: const InputDecoration(prefixIcon: Icon(Icons.work)),
+                  selectedItemBuilder: (context) {
+                    return jdState.jds.map((j) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${j.title} (${j.company})',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      );
+                    }).toList();
+                  },
                   items: jdState.jds.map((j) => DropdownMenuItem(
                     value: j.id,
-                    child: Text('${j.title} (${j.company})', overflow: TextOverflow.ellipsis),
+                    child: Text('${j.title} (${j.company})', overflow: TextOverflow.ellipsis, maxLines: 1),
                   )).toList(),
                   onChanged: (val) {
                     if (val != null) ref.read(jdProvider.notifier).selectJd(val);
