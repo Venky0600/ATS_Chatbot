@@ -4,13 +4,18 @@ import 'auth_storage.dart';
 class ApiClient {
   final Dio dio;
   final AuthStorage authStorage;
+  final Dio _authDio;
 
   ApiClient({required this.authStorage})
       : dio = Dio(BaseOptions(
           baseUrl: 'http://127.0.0.1:5000/api/v1',
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
-          headers: {'Content-Type': 'application/json'},
+        )),
+        _authDio = Dio(BaseOptions(
+          baseUrl: 'http://127.0.0.1:5000/api/v1',
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         )) {
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -18,8 +23,8 @@ class ApiClient {
           var token = await authStorage.getToken();
           if ((token == null || token.isEmpty) && !options.path.contains('/auth/')) {
             try {
-              final authRes = await dio.post('/auth/google', data: {'idToken': 'default_guest_user_token'});
-              if (authRes.data['success'] == true) {
+              final authRes = await _authDio.post('/auth/google', data: {'idToken': 'default_guest_user_token'});
+              if (authRes.data != null && authRes.data['success'] == true) {
                 token = authRes.data['data']['accessToken'];
                 if (token != null && token.isNotEmpty) {
                   await authStorage.saveToken(token);
