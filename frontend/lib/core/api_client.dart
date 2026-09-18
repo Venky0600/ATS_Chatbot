@@ -5,6 +5,7 @@ class ApiClient {
   final Dio dio;
   final AuthStorage authStorage;
   final Dio _authDio;
+  Future<String?>? _authInFlight;
 
   ApiClient({required this.authStorage})
       : dio = Dio(BaseOptions(
@@ -20,22 +21,11 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          var token = await authStorage.getToken();
-          if ((token == null || token.isEmpty) && !options.path.contains('/auth/')) {
-            try {
-              final authRes = await _authDio.post('/auth/google', data: {'idToken': 'default_guest_user_token'});
-              if (authRes.data != null && authRes.data['success'] == true) {
-                token = authRes.data['data']['accessToken'];
-                if (token != null && token.isNotEmpty) {
-                  await authStorage.saveToken(token);
-                }
-              }
-            } catch (e) {
-              print('[ApiClient Auto-Auth Failed]: $e');
+          if (!options.path.contains('/auth/')) {
+            final token = await _getOrFetchToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
             }
-          }
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },
@@ -45,6 +35,35 @@ class ApiClient {
         },
       ),
     );
+  }
+
+  Future<String?> _getOrFetchToken() async {
+    var token = await authStorage.getToken();
+    if (token != null && token.isNotEmpty) return token;
+
+    if (_authInFlight != null) {
+      return await _authInFlight;
+    }
+
+    _authInFlight = (() async {
+      try {
+        final authRes = await _authDio.post('/auth/google', data: {'idToken': 'default_guest_user_token'});
+        if (authRes.data != null && authRes.data['success'] == true) {
+          final newToken = authRes.data['data']['accessToken'] as String?;
+          if (newToken != null && newToken.isNotEmpty) {
+            await authStorage.saveToken(newToken);
+            return newToken;
+          }
+        }
+      } catch (e) {
+        print('[ApiClient Auto-Auth Failed]: $e');
+      } finally {
+        _authInFlight = null;
+      }
+      return null;
+    })();
+
+    return await _authInFlight;
   }
 
   Future<Response> post(String path, {dynamic data, Options? options}) async {
