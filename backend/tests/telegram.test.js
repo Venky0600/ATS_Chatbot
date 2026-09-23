@@ -22,7 +22,7 @@ test.before(async () => {
 
 test.after(async () => {
   if (server) server.close();
-  await new Promise((r) => setTimeout(r, 200));
+  await new Promise((r) => setTimeout(r, 500));
   try {
     await mongoose.disconnect();
   } catch (_) {}

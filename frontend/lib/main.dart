@@ -7,6 +7,7 @@ import 'features/home/home_screen.dart';
 import 'features/auth/auth_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     DevicePreview(
       enabled: !kReleaseMode,

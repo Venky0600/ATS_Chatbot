@@ -1,5 +1,13 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'auth_storage.dart';
+
+String get _defaultBaseUrl {
+  if (kIsWeb) {
+    return 'http://localhost:5000/api/v1';
+  }
+  return 'http://127.0.0.1:5000/api/v1';
+}
 
 class ApiClient {
   final Dio dio;
@@ -9,12 +17,12 @@ class ApiClient {
 
   ApiClient({required this.authStorage})
       : dio = Dio(BaseOptions(
-          baseUrl: 'http://127.0.0.1:5000/api/v1',
+          baseUrl: _defaultBaseUrl,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
         )),
         _authDio = Dio(BaseOptions(
-          baseUrl: 'http://127.0.0.1:5000/api/v1',
+          baseUrl: _defaultBaseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
         )) {
